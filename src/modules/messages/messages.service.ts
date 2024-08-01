@@ -1,32 +1,22 @@
 import { Injectable, NotFoundException } from '@nestjs/common'
 import { CreateMessageDto } from './dtos/create-message.dto'
-import { UpdateMessageDto } from './dtos/update-message.dto'
 import { InjectRepository } from '@nestjs/typeorm'
 import { Message } from './message.entity'
-import { Repository } from 'typeorm'
+import { MessagesRepository } from './messages.repository'
 
 @Injectable()
 export class MessagesService {
-	constructor(@InjectRepository(Message) private readonly userRepository: Repository<Message>) {}
+	constructor(
+		@InjectRepository(MessagesRepository)
+		private readonly repository: MessagesRepository,
+	) {}
 
 	async createMessage(createMessageDto: CreateMessageDto): Promise<Message> {
-		const newMessage = await new this.messageModel(createMessageDto)
-		const data = await newMessage.save()
-
-		return data
-	}
-
-	async updateMessage(messageId: string, updateMessageDto: UpdateMessageDto): Promise<Message> {
-		const existingMessage = await this.messageModel.findByIdAndUpdate(messageId, updateMessageDto, { new: true })
-		if (!existingMessage) {
-			throw new NotFoundException(`Message #${messageId} not found`)
-		}
-
-		return existingMessage
+		return await this.repository.createOne(createMessageDto)
 	}
 
 	async getAllMessages(): Promise<Message[] | []> {
-		const messageData = await this.messageModel.find()
+		const messageData = await this.repository.findAll()
 		if (!messageData || messageData.length == 0) {
 			throw new NotFoundException('Messages data not found!')
 		}
@@ -35,7 +25,7 @@ export class MessagesService {
 	}
 
 	async getMessage(messageId: string): Promise<Message> {
-		const existingMessage = await this.messageModel.findById(messageId).exec()
+		const existingMessage = await this.repository.findOneBy({ id: +messageId })
 		if (!existingMessage) {
 			throw new NotFoundException(`Message #${messageId} not found`)
 		}
@@ -43,22 +33,10 @@ export class MessagesService {
 		return existingMessage
 	}
 
-	async deleteMessage(messageId: string): Promise<Message> {
-		const deletedMessage = await this.messageModel.findByIdAndDelete(messageId)
+	async deleteMessage(messageId: string): Promise<void> {
+		const deletedMessage = await this.repository.delete({ id: +messageId })
 		if (!deletedMessage) {
 			throw new NotFoundException(`Message #${messageId} not found`)
 		}
-
-		return deletedMessage
-	}
-
-	async searchMessages(text: string): Promise<Message[] | []> {
-		const results = await this.messageSearchService.search(text)
-		const ids = results.map((result) => result.message_id)
-		if (!ids.length) {
-			return []
-		}
-
-		return await this.messageModel.find().where('_id').in(ids)
 	}
 }

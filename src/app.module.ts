@@ -14,17 +14,19 @@ import { MessagesModule } from './modules/messages/message.module'
 		}),
 		TypeOrmModule.forRootAsync({
 			imports: [ConfigModule],
-			useFactory: (configService: ConfigService) => ({
-				type: 'postgres',
-				host: configService.get('POSTGRES_USER'),
-				port: configService.get('POSTGRES_HOST'),
-				username: configService.get('POSTGRES_USER'),
-				password: configService.get('POSTGRES_PASSWORD'),
-				entities: [__dirname + '/../**/*.entity{.ts,.js}'],
-				database: configService.get('POSTGRES_DB'),
-				synchronize: true,
-				logging: true,
-			}),
+			useFactory: (configService: ConfigService) => {
+				return {
+					type: 'postgres',
+					host: configService.get('POSTGRES_HOST'),
+					port: configService.get('POSTGRES_HOST_PORT'),
+					username: configService.get('POSTGRES_USER'),
+					password: configService.get('POSTGRES_PASSWORD'),
+					entities: [__dirname + '/../**/*.entity{.ts,.js}'],
+					database: configService.get('POSTGRES_DB'),
+					synchronize: true,
+					logging: true,
+				}
+			},
 			inject: [ConfigService],
 		}),
 		MessagesModule,
